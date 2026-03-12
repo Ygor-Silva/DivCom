@@ -30,6 +30,7 @@ type DailyData = { date: string; fullDate: string; total: number };
 export default function DashboardPage() {
   const { user, isAdmin } = useAuth();
   const [records, setRecords] = useState<any[]>([]);
+  const [prevMonthRecords, setPrevMonthRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Dialog states
@@ -42,23 +43,58 @@ export default function DashboardPage() {
     const fetchRecords = async () => {
       if (!user) return;
       const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+      const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+      const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0];
 
-      const { data } = await supabase
+      // Fetch current month
+      const { data: currentData } = await supabase
         .from("service_records")
         .select("*")
-        .gte("service_date", startOfMonth)
+        .gte("service_date", startOfCurrentMonth)
         .order("service_date", { ascending: false });
 
-      setRecords(data || []);
+      // Fetch previous month
+      const { data: prevData } = await supabase
+        .from("service_records")
+        .select("*")
+        .gte("service_date", startOfPrevMonth)
+        .lt("service_date", startOfCurrentMonth);
+
+      setRecords(currentData || []);
+      setPrevMonthRecords(prevData || []);
       setLoading(false);
     };
     fetchRecords();
   }, [user]);
 
-  const totalRevenue = records.reduce((sum, r) => sum + Number(r.service_value), 0);
-  const totalCommission = records.reduce((sum, r) => sum + Number(r.professional_commission), 0);
-  const totalServices = records.length;
+  const calculateMetrics = (data: any[]) => {
+    const revenue = data.reduce((sum, r) => sum + Number(r.service_value), 0);
+    const commission = data.reduce((sum, r) => sum + Number(r.professional_commission), 0);
+    const services = data.length;
+    return { revenue, commission, services };
+  };
+
+  const currentMetrics = calculateMetrics(records);
+  const prevMetrics = calculateMetrics(prevMonthRecords);
+
+  const calculateChange = (current: number, prev: number) => {
+    if (prev === 0) return current > 0 ? 100 : 0;
+    return ((current - prev) / prev) * 100;
+  };
+
+  const revenueChange = calculateChange(
+    isAdmin ? currentMetrics.revenue : currentMetrics.commission,
+    isAdmin ? prevMetrics.revenue : prevMetrics.commission
+  );
+  const commissionChange = calculateChange(
+    isAdmin ? currentMetrics.commission : currentMetrics.revenue,
+    isAdmin ? prevMetrics.commission : prevMetrics.revenue
+  );
+  const servicesChange = calculateChange(currentMetrics.services, prevMetrics.services);
+
+  const totalRevenue = currentMetrics.revenue;
+  const totalCommission = currentMetrics.commission;
+  const totalServices = currentMetrics.services;
   const averageTicket = totalServices > 0 ? totalRevenue / totalServices : 0;
   const averageCommission = totalServices > 0 ? totalCommission / totalServices : 0;
   const uniqueDays = new Set(records.map(r => r.service_date)).size;
@@ -87,7 +123,8 @@ export default function DashboardPage() {
       icon: DollarSign,
       color: "text-emerald-600",
       bg: "bg-emerald-500/10",
-      borderColor: "border-emerald-500/30"
+      borderColor: "border-emerald-500/30",
+      change: revenueChange
     },
     {
       id: "commission",
@@ -96,7 +133,8 @@ export default function DashboardPage() {
       footer: `Comissão média: R$ ${averageCommission.toFixed(2)}`,
       icon: TrendingUp,
       color: "text-emerald-600",
-      bg: "bg-emerald-500/10"
+      bg: "bg-emerald-500/10",
+      change: commissionChange
     },
     {
       id: "services",
@@ -105,7 +143,8 @@ export default function DashboardPage() {
       footer: `Ticket médio: R$ ${averageTicket.toFixed(2)}`,
       icon: Scissors,
       color: "text-emerald-600",
-      bg: "bg-emerald-500/10"
+      bg: "bg-emerald-500/10",
+      change: servicesChange
     },
     {
       id: "period",
@@ -173,6 +212,17 @@ export default function DashboardPage() {
                     <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", stat.bg)}>
                       <Icon className={cn("h-5 w-5", stat.color)} />
                     </div>
+                    {stat.change !== undefined && (
+                      <div className="flex flex-col items-end">
+                        <div className={cn(
+                          "flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                          stat.change >= 0 ? "text-emerald-600 bg-emerald-500/10" : "text-red-600 bg-red-500/10"
+                        )}>
+                          {stat.change >= 0 ? "▲" : "▼"} {Math.abs(stat.change).toFixed(0)}%
+                        </div>
+                        <span className="text-[8px] text-muted-foreground mt-1 text-right">Em relação ao mês passado</span>
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mb-1">{stat.title}</p>
                   <p className="text-xl font-bold tracking-tight text-foreground">{loading ? "..." : stat.value}</p>
