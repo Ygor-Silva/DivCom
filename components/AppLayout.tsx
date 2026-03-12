@@ -10,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import LoadingScreen from "./LoadingScreen";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -63,6 +64,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const visibleItems = isProfileIncomplete 
     ? [{ to: "/profile", label: "Perfil", icon: User }]
     : allItems;
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

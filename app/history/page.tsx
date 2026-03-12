@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function HistoryPage() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -175,6 +176,14 @@ export default function HistoryPage() {
     toast.success("PDF exportado com sucesso!");
   };
 
+  if (loading) {
+    return (
+      <AppLayout>
+        <LoadingScreen />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -224,9 +233,7 @@ export default function HistoryPage() {
         {/* Table */}
         <Card>
           <CardContent className="p-0">
-            {loading ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">Carregando...</p>
-            ) : records.length === 0 ? (
+            {records.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground text-sm">Nenhum registro encontrado.</p>
             ) : (
               <div className="overflow-x-auto">

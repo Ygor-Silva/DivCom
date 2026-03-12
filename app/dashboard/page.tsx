@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import LoadingScreen from "@/components/LoadingScreen";
 
 type DailyData = { date: string; fullDate: string; total: number };
 
@@ -129,6 +130,14 @@ export default function DashboardPage() {
   };
 
   const dayRecords = records.filter(r => r.service_date === selectedDay);
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <LoadingScreen />
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Percent } from "lucide-react";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -128,6 +129,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      {loading && <LoadingScreen />}
       <Card className="w-full max-w-md animate-slide-up">
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto h-14 w-14 rounded-2xl bg-emerald-600 flex items-center justify-center mb-2 shadow-xl shadow-emerald-600/20">
