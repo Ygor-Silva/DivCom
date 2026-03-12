@@ -76,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Sessão recuperada:", !!session);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {

@@ -75,6 +75,7 @@ export type Database = {
       service_records: {
         Row: {
           client_name: string
+          comanda_id: string | null
           created_at: string | null
           id: string
           notes: string | null
@@ -87,6 +88,7 @@ export type Database = {
         }
         Insert: {
           client_name: string
+          comanda_id?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
@@ -99,6 +101,7 @@ export type Database = {
         }
         Update: {
           client_name?: string
+          comanda_id?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null

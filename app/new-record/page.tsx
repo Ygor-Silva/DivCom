@@ -29,6 +29,7 @@ const SERVICE_TYPES = [
 export default function NewRecordPage() {
   const { user } = useAuth();
   const [clientName, setClientName] = useState("");
+  const [comandaId, setComandaId] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [serviceValue, setServiceValue] = useState("");
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split("T")[0]);
@@ -52,31 +53,46 @@ export default function NewRecordPage() {
     if (!user) return;
     setLoading(true);
 
-    const { error } = await supabase.from("service_records").insert({
-      user_id: user.id,
-      client_name: clientName.trim(),
-      service_type: serviceType,
-      service_value: value,
-      owner_cut: ownerCut,
-      professional_commission: commission,
-      service_date: serviceDate,
-      notes: notes.trim() || null,
-    });
+    try {
+      const { error } = await supabase.from("service_records").insert({
+        user_id: user.id,
+        client_name: clientName.trim(),
+        comanda_id: comandaId.trim() || null,
+        service_type: serviceType,
+        service_value: value,
+        owner_cut: ownerCut,
+        professional_commission: commission,
+        service_date: serviceDate,
+        notes: notes.trim() || null,
+      });
 
-    if (error) {
-      toast.error("Erro ao salvar registro.");
-    } else {
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        setClientName("");
-        setServiceType("");
-        setServiceValue("");
-        setNotes("");
-        setServiceDate(new Date().toISOString().split("T")[0]);
-      }, 1500);
+      if (error) {
+        console.error("Erro Supabase:", error);
+        if (error.code === "42P01") {
+          toast.error("Erro: A tabela 'service_records' não foi encontrada no banco de dados.");
+        } else if (error.code === "42703") {
+          toast.error("Erro: A coluna 'comanda_id' não existe. Você rodou o comando SQL no Supabase?");
+        } else {
+          toast.error(`Erro ao salvar: ${error.message}`);
+        }
+      } else {
+        setSuccess(true);
+        setTimeout(() => {
+          setSuccess(false);
+          setClientName("");
+          setComandaId("");
+          setServiceType("");
+          setServiceValue("");
+          setNotes("");
+          setServiceDate(new Date().toISOString().split("T")[0]);
+        }, 1500);
+      }
+    } catch (err: any) {
+      console.error("Erro inesperado:", err);
+      toast.error("Ocorreu um erro inesperado. Verifique sua conexão.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (success) {
@@ -114,6 +130,19 @@ export default function NewRecordPage() {
                     maxLength={100}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="comanda">N° da Comanda</Label>
+                  <Input
+                    id="comanda"
+                    value={comandaId}
+                    onChange={(e) => setComandaId(e.target.value)}
+                    placeholder="001"
+                    maxLength={50}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="type">Tipo de Serviço</Label>
                   <Select value={serviceType} onValueChange={setServiceType} required>

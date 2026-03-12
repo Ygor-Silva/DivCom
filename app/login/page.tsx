@@ -47,7 +47,11 @@ export default function LoginPage() {
 
       const { error } = await supabase.auth.updateUser({ password });
       if (error) {
-        toast.error(error.message);
+        if (error.message === 'Failed to fetch') {
+          toast.error("Erro de conexão. Verifique se o Supabase está configurado corretamente.");
+        } else {
+          toast.error(error.message);
+        }
       } else {
         toast.success("Senha atualizada com sucesso!");
         setIsResettingPassword(false);
@@ -62,7 +66,11 @@ export default function LoginPage() {
         redirectTo: `${window.location.origin}/login?type=recovery`,
       });
       if (error) {
-        toast.error(error.message);
+        if (error.message === 'Failed to fetch') {
+          toast.error("Erro de conexão. Verifique se o Supabase está configurado corretamente.");
+        } else {
+          toast.error(error.message);
+        }
       } else {
         toast.success("Email de recuperação enviado! Verifique sua caixa de entrada.");
         setIsForgotPassword(false);
@@ -95,14 +103,22 @@ export default function LoginPage() {
         },
       });
       if (error) {
-        toast.error(error.message);
+        if (error.message === 'Failed to fetch') {
+          toast.error("Erro de conexão. Verifique se o Supabase está configurado corretamente.");
+        } else {
+          toast.error(error.message);
+        }
       } else {
         toast.success("Conta criada! Verifique seu email.");
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        toast.error("Email ou senha incorretos.");
+        if (error.message === 'Failed to fetch') {
+          toast.error("Erro de conexão. Verifique se o Supabase está configurado corretamente.");
+        } else {
+          toast.error("Email ou senha incorretos.");
+        }
       } else {
         router.push("/dashboard");
       }
