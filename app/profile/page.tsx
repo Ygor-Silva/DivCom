@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [bio, setBio] = useState("");
+  const [monthlyGoal, setMonthlyGoal] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export default function ProfilePage() {
       setPhone(maskPhone(profile.phone || ""));
       setSpecialty(profile.specialty || "");
       setBio(profile.bio || "");
+      setMonthlyGoal(profile.monthly_goal?.toString() || "");
       setAvatarPreview(profile.avatar_url || null);
     }
   }, [profile]);
@@ -141,6 +143,7 @@ export default function ProfilePage() {
           phone: phone.trim(),
           specialty: specialty.trim(),
           bio: bio.trim(),
+          monthly_goal: monthlyGoal ? parseFloat(monthlyGoal) : null,
           profile_completed: isCompleted,
         })
         .eq("user_id", user.id);
@@ -230,9 +233,16 @@ export default function ProfilePage() {
                   <Input value={specialty} onChange={(e) => setSpecialty(e.target.value)} required maxLength={50} placeholder="Colorista, Barbeiro..." />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Mini-bio</Label>
-                <Textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={300} rows={3} placeholder="Conte um pouco sobre você..." />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Mini-bio</Label>
+                  <Textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={300} rows={3} placeholder="Conte um pouco sobre você..." />
+                </div>
+                <div className="space-y-2">
+                  <Label>Meta Mensal de Faturamento (R$)</Label>
+                  <Input type="number" step="0.01" min="0" value={monthlyGoal} onChange={(e) => setMonthlyGoal(e.target.value)} placeholder="Ex: 5000.00" />
+                  <p className="text-[10px] text-muted-foreground">Defina uma meta para acompanhar no seu Dashboard.</p>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Salvando..." : "Salvar Perfil"}

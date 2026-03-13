@@ -14,6 +14,7 @@ type Profile = {
   bio: string | null;
   profile_completed: boolean | null;
   avatar_url: string | null;
+  monthly_goal: number | null;
 };
 
 type AuthContextType = {

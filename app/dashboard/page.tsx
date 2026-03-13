@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { DollarSign, TrendingUp, Scissors, Calendar, ArrowRight, Info } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from "recharts";
+import { DollarSign, TrendingUp, Scissors, Calendar, ArrowRight, Info, Target, Award } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { 
   Dialog, 
@@ -28,7 +28,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 type DailyData = { date: string; fullDate: string; total: number };
 
 export default function DashboardPage() {
-  const { user, isAdmin } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const [records, setRecords] = useState<any[]>([]);
   const [prevMonthRecords, setPrevMonthRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +114,25 @@ export default function DashboardPage() {
       total,
     }));
 
+  // Group by service type for ranking
+  const serviceMap: Record<string, number> = {};
+  records.forEach((r) => {
+    const type = r.service_type || "Outros";
+    serviceMap[type] = (serviceMap[type] || 0) + 1;
+  });
+
+  const COLORS = ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
+
+  const rankingData = Object.entries(serviceMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5); // Top 5 services
+
+  // Monthly Goal Calculation
+  const monthlyGoal = profile?.monthly_goal || 0;
+  const currentTotal = isAdmin ? totalRevenue : totalCommission;
+  const goalProgress = monthlyGoal > 0 ? Math.min((currentTotal / monthlyGoal) * 100, 100) : 0;
+
   const stats = [
     {
       id: "revenue",
@@ -191,6 +210,33 @@ export default function DashboardPage() {
           </Badge>
         </div>
 
+        {/* Goal Progress Bar */}
+        {monthlyGoal > 0 && (
+          <Card className="border-emerald-500/20 bg-emerald-500/5">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-emerald-600" />
+                  <h3 className="font-semibold text-sm sm:text-base text-emerald-900 dark:text-emerald-400">Meta Mensal</h3>
+                </div>
+                <span className="text-sm font-bold text-emerald-600">
+                  {goalProgress.toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-3 w-full bg-emerald-100 dark:bg-emerald-950 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 transition-all duration-1000 ease-out"
+                  style={{ width: `${goalProgress}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-2 text-xs text-muted-foreground font-medium">
+                <span>R$ {currentTotal.toFixed(2)} alcançado</span>
+                <span>Meta: R$ {monthlyGoal.toFixed(2)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {stats.map((stat, i) => {
@@ -237,72 +283,131 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* Chart */}
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-semibold">Ganhos Diários</CardTitle>
-            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-          </CardHeader>
-          <CardContent className="pt-4">
-            {chartData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                  <Calendar className="h-6 w-6 text-muted-foreground" />
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Bar Chart */}
+          <Card className="overflow-hidden lg:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-base font-semibold">Ganhos Diários</CardTitle>
+              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+            </CardHeader>
+            <CardContent className="pt-4">
+              {chartData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                    <Calendar className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground text-sm">Nenhum registro neste mês ainda.</p>
                 </div>
-                <p className="text-muted-foreground text-sm">Nenhum registro neste mês ainda.</p>
-              </div>
-            ) : (
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fontSize: 11 }} 
-                      stroke="hsl(var(--muted-foreground))"
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 11 }} 
-                      stroke="hsl(var(--muted-foreground))"
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      cursor={{ fill: 'hsl(var(--accent))', opacity: 0.4 }}
-                      contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
-                      }}
-                      formatter={(value: any) => [`R$ ${Number(value).toFixed(2)}`, "Total"]}
-                    />
-                    <Bar 
-                      dataKey="total" 
-                      radius={[4, 4, 0, 0]} 
-                      onClick={handleBarClick}
-                      className="cursor-pointer"
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.fullDate === new Date().toISOString().split('T')[0] ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.6)"}
-                          className="hover:fill-primary transition-colors"
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-            <p className="text-[10px] text-center text-muted-foreground mt-4">
-              Dica: Clique em uma barra para ver os detalhes do dia.
-            </p>
-          </CardContent>
-        </Card>
+              ) : (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: 11 }} 
+                        stroke="hsl(var(--muted-foreground))"
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 11 }} 
+                        stroke="hsl(var(--muted-foreground))"
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        cursor={{ fill: 'hsl(var(--accent))', opacity: 0.4 }}
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                        }}
+                        formatter={(value: any) => [`R$ ${Number(value).toFixed(2)}`, "Total"]}
+                      />
+                      <Bar 
+                        dataKey="total" 
+                        radius={[4, 4, 0, 0]} 
+                        onClick={handleBarClick}
+                        className="cursor-pointer"
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.fullDate === new Date().toISOString().split('T')[0] ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.6)"}
+                            className="hover:fill-primary transition-colors"
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+              <p className="text-[10px] text-center text-muted-foreground mt-4">
+                Dica: Clique em uma barra para ver os detalhes do dia.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Ranking Chart */}
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-base font-semibold">Top Serviços</CardTitle>
+              <Award className="h-4 w-4 text-emerald-600" />
+            </CardHeader>
+            <CardContent className="pt-4">
+              {rankingData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <p className="text-muted-foreground text-sm">Sem dados suficientes.</p>
+                </div>
+              ) : (
+                <div className="h-[300px] w-full flex flex-col items-center justify-center">
+                  <ResponsiveContainer width="100%" height="80%">
+                    <PieChart>
+                      <Pie
+                        data={rankingData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {rankingData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                        formatter={(value: any) => [`${value} atendimentos`, "Quantidade"]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="w-full mt-2 space-y-1">
+                    {rankingData.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                          <span className="truncate max-w-[120px]" title={item.name}>{item.name}</span>
+                        </div>
+                        <span className="font-semibold">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Stat Details Dialog */}
         <Dialog open={isStatDialogOpen} onOpenChange={setIsStatDialogOpen}>
