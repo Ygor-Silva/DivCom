@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from "recharts";
-import { DollarSign, TrendingUp, Scissors, Calendar, ArrowRight, Info, Target, Award } from "lucide-react";
+import { DollarSign, TrendingUp, Scissors, Calendar, ArrowRight, Info, Target, Award, AlertCircle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
   DialogContent, 
@@ -28,6 +30,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 type DailyData = { date: string; fullDate: string; total: number };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user, profile, isAdmin } = useAuth();
   const [records, setRecords] = useState<any[]>([]);
   const [prevMonthRecords, setPrevMonthRecords] = useState<any[]>([]);
@@ -133,6 +136,13 @@ export default function DashboardPage() {
   const currentTotal = isAdmin ? totalRevenue : totalCommission;
   const goalProgress = monthlyGoal > 0 ? Math.min((currentTotal / monthlyGoal) * 100, 100) : 0;
 
+  // Notification Logic
+  const todayStr = new Date().toISOString().split("T")[0];
+  const hasRecordsToday = records.some(r => r.service_date === todayStr);
+  const currentHour = new Date().getHours();
+  // Show reminder if it's past 12:00 PM and no records today
+  const showReminder = !hasRecordsToday && currentHour >= 12;
+
   const stats = [
     {
       id: "revenue",
@@ -209,6 +219,31 @@ export default function DashboardPage() {
             {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })}
           </Badge>
         </div>
+
+        {/* Notification Banner */}
+        {showReminder && (
+          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-4 animate-fade-in shadow-sm">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="bg-amber-100 dark:bg-amber-900/50 p-2 rounded-full flex-shrink-0 mt-0.5 sm:mt-0">
+                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-400">Lembrete de Atendimentos</h4>
+                <p className="text-sm text-amber-700 dark:text-amber-500/90 mt-0.5">
+                  Já passou do meio-dia e você ainda não registrou nenhum atendimento hoje. Não se esqueça de manter seu histórico atualizado!
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="sm:w-auto w-full bg-white dark:bg-transparent border-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900 text-amber-700 dark:text-amber-400" 
+              onClick={() => router.push('/new-record')}
+            >
+              Registrar agora
+            </Button>
+          </div>
+        )}
 
         {/* Goal Progress Bar */}
         {monthlyGoal > 0 && (

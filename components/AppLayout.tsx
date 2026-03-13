@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PlusCircle, History, User, Shield, LogOut, Percent } from "lucide-react";
+import { LayoutDashboard, PlusCircle, History, User, Shield, LogOut, Percent, Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -26,6 +26,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const isProfileIncomplete = profile && !profile.profile_completed;
+
+  // Notification state (mock for now, can be connected to DB later)
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: "Bem-vindo ao DiviCom!", message: "Complete seu perfil para aproveitar todas as funcionalidades.", read: false, date: new Date().toISOString() }
+  ]);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  };
 
   useEffect(() => {
     if (!loading) {
@@ -87,6 +97,65 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </Link>
         
         <div className="flex items-center gap-3">
+          {/* Notifications */}
+          {!isProfileIncomplete && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="relative p-2 rounded-full hover:bg-accent transition-colors outline-none">
+                  <Bell className="h-5 w-5 text-muted-foreground" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1.5 flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                    </span>
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <h4 className="font-semibold text-sm">Notificações</h4>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllAsRead} className="text-[10px] text-emerald-600 hover:underline font-medium">
+                      Marcar todas como lidas
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-[300px] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      Nenhuma notificação no momento.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      {notifications.map((notification) => (
+                        <div 
+                          key={notification.id} 
+                          className={cn(
+                            "px-4 py-3 border-b last:border-0 hover:bg-muted/50 transition-colors",
+                            !notification.read && "bg-emerald-50/50 dark:bg-emerald-950/20"
+                          )}
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <h5 className={cn("text-sm font-medium", !notification.read && "text-emerald-700 dark:text-emerald-400")}>
+                              {notification.title}
+                            </h5>
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                              {new Date(notification.date).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {notification.message}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* User Profile */}
           <Popover>
             <PopoverTrigger asChild>
               <button className="flex items-center gap-2 hover:bg-accent p-1 rounded-full transition-colors outline-none">
