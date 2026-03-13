@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PlusCircle, History, User, Shield, LogOut, Percent, Bell } from "lucide-react";
+import { LayoutDashboard, PlusCircle, History, User, Shield, LogOut, Percent, Bell, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +16,7 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/new-record", label: "Novo Registro", icon: PlusCircle },
   { to: "/history", label: "Histórico", icon: History },
+  { to: "/clients", label: "Clientes", icon: Users },
   { to: "/profile", label: "Perfil", icon: User },
 ];
 
