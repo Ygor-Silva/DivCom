@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("*")
       .eq("user_id", userId)
       .single();
-    setProfile(data);
+    setProfile(data as Profile | null);
   };
 
   const fetchRole = async (userId: string) => {
