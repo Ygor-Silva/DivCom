@@ -19,6 +19,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
+  const [salonName, setSalonName] = useState("");
+  const [salonCnpj, setSalonCnpj] = useState("");
   const [phone, setPhone] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [bio, setBio] = useState("");
@@ -61,6 +63,8 @@ export default function ProfilePage() {
     if (profile) {
       setFullName(profile.full_name || "");
       setCpfCnpj(maskCpfCnpj(profile.cpf_cnpj || ""));
+      setSalonName(profile.salon_name || "");
+      setSalonCnpj(maskCpfCnpj(profile.salon_cnpj || ""));
       setPhone(maskPhone(profile.phone || ""));
       setSpecialty(profile.specialty || "");
       setBio(profile.bio || "");
@@ -133,13 +137,15 @@ export default function ProfilePage() {
     setLoading(true);
 
     try {
-      const isCompleted = !!(fullName.trim() && phone.trim() && specialty.trim());
+      const isCompleted = !!(fullName.trim() && phone.trim() && specialty.trim() && salonName.trim() && salonCnpj.trim());
       
       const { error } = await supabase
         .from("profiles")
         .update({
           full_name: fullName.trim(),
           cpf_cnpj: cpfCnpj.trim(),
+          salon_name: salonName.trim(),
+          salon_cnpj: salonCnpj.trim(),
           phone: phone.trim(),
           specialty: specialty.trim(),
           bio: bio.trim(),
@@ -219,8 +225,18 @@ export default function ProfilePage() {
                   <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={100} />
                 </div>
                 <div className="space-y-2">
-                  <Label>CPF/CNPJ</Label>
+                  <Label>Seu CPF/CNPJ</Label>
                   <Input value={cpfCnpj} onChange={(e) => setCpfCnpj(maskCpfCnpj(e.target.value))} maxLength={18} placeholder="000.000.000-00" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Razão Social do Salão *</Label>
+                  <Input value={salonName} onChange={(e) => setSalonName(e.target.value)} required maxLength={100} placeholder="Nome do seu salão" />
+                </div>
+                <div className="space-y-2">
+                  <Label>CNPJ do Salão *</Label>
+                  <Input value={salonCnpj} onChange={(e) => setSalonCnpj(maskCpfCnpj(e.target.value))} required maxLength={18} placeholder="00.000.000/0000-00" />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

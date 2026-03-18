@@ -143,6 +143,18 @@ export default function HistoryPage() {
     const specialty = profile?.specialty ? ` — ${profile.specialty}` : "";
     doc.text(`Profissional: ${professionalName}${specialty}`, 15, 48);
 
+    let currentY = 54;
+    if (profile?.salon_name) {
+      doc.text(`Salão: ${profile.salon_name}`, 15, currentY);
+      currentY += 6;
+    }
+    if (profile?.salon_cnpj) {
+      doc.text(`CNPJ: ${profile.salon_cnpj}`, 15, currentY);
+      currentY += 6;
+    }
+
+    currentY += 2; // Add some padding before the summary box
+
     // Summary Metrics
     const totalValue = records.reduce((acc, r) => acc + Number(r.service_value), 0);
     const totalCommission = records.reduce((acc, r) => acc + Number(r.professional_commission), 0);
@@ -150,21 +162,21 @@ export default function HistoryPage() {
     const avgTicket = totalServices > 0 ? totalValue / totalServices : 0;
 
     doc.setFillColor(244, 244, 245); // zinc-100
-    doc.rect(15, 55, pageWidth - 30, 25, "F");
+    doc.rect(15, currentY, pageWidth - 30, 25, "F");
     
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text("Resumo do Período", 20, 62);
+    doc.text("Resumo do Período", 20, currentY + 7);
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.text(`Total de Atendimentos: ${totalServices}`, 20, 70);
-    doc.text(`Ticket Médio: R$ ${avgTicket.toFixed(2)}`, 20, 75);
+    doc.text(`Total de Atendimentos: ${totalServices}`, 20, currentY + 15);
+    doc.text(`Ticket Médio: R$ ${avgTicket.toFixed(2)}`, 20, currentY + 20);
     
     doc.setFont("helvetica", "bold");
-    doc.text(`Faturamento Total: R$ ${totalValue.toFixed(2)}`, pageWidth / 2, 70);
+    doc.text(`Faturamento Total: R$ ${totalValue.toFixed(2)}`, pageWidth / 2, currentY + 15);
     doc.setTextColor(5, 150, 105); // emerald-600
-    doc.text(`Sua Comissão: R$ ${totalCommission.toFixed(2)}`, pageWidth / 2, 75);
+    doc.text(`Sua Comissão: R$ ${totalCommission.toFixed(2)}`, pageWidth / 2, currentY + 20);
 
     // Table
     const tableHeaders = [["Data", "Cliente", "Serviço", "Valor", "Comissão"]];
@@ -179,7 +191,7 @@ export default function HistoryPage() {
     autoTable(doc, {
       head: tableHeaders,
       body: tableData,
-      startY: 85,
+      startY: currentY + 30,
       theme: "grid",
       headStyles: { fillColor: [5, 150, 105], textColor: [255, 255, 255], fontStyle: "bold" },
       styles: { fontSize: 9, cellPadding: 3 },

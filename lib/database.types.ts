@@ -43,6 +43,8 @@ export type Database = {
         Row: {
           bio: string | null
           cpf_cnpj: string | null
+          salon_name: string | null
+          salon_cnpj: string | null
           created_at: string | null
           full_name: string | null
           id: string
@@ -56,6 +58,8 @@ export type Database = {
         Insert: {
           bio?: string | null
           cpf_cnpj?: string | null
+          salon_name?: string | null
+          salon_cnpj?: string | null
           created_at?: string | null
           full_name?: string | null
           id?: string
@@ -69,6 +73,8 @@ export type Database = {
         Update: {
           bio?: string | null
           cpf_cnpj?: string | null
+          salon_name?: string | null
+          salon_cnpj?: string | null
           created_at?: string | null
           full_name?: string | null
           id?: string

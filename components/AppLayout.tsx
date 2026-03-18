@@ -189,7 +189,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <Separator />
               <div className="px-4 py-2 space-y-1">
                 {profile?.phone && <p className="text-xs text-muted-foreground">📞 <span className="font-medium text-foreground/80">Contato:</span> {profile.phone}</p>}
-                {profile?.cpf_cnpj && <p className="text-xs text-muted-foreground">🪪 <span className="font-medium text-foreground/80">Documento:</span> {profile.cpf_cnpj}</p>}
+                {profile?.salon_name && <p className="text-xs text-muted-foreground">🏢 <span className="font-medium text-foreground/80">Salão:</span> {profile.salon_name}</p>}
                 {profile?.bio && (
                   <p className="text-xs text-muted-foreground italic mt-1 line-clamp-2">
                     📝 <span className="font-medium text-foreground/80 not-italic">Bio:</span> &quot;{profile.bio}&quot;

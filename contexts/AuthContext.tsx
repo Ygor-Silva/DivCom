@@ -9,6 +9,8 @@ type Profile = {
   user_id: string;
   full_name: string | null;
   cpf_cnpj: string | null;
+  salon_name: string | null;
+  salon_cnpj: string | null;
   phone: string | null;
   specialty: string | null;
   bio: string | null;
