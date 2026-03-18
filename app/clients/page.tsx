@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Edit2, Trash2, User, Phone, Mail, FileText } from "lucide-react";
+import { Search, Plus, Edit2, Trash2, User, Phone, Mail, FileText, Users, Scissors, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import LoadingScreen from "@/components/LoadingScreen";
 
@@ -27,6 +27,7 @@ type ClientStats = {
   totalSpent: number;
   visits: number;
   lastVisit: string | null;
+  favoriteService: string | null;
 };
 
 export default function ClientsPage() {
@@ -90,7 +91,7 @@ export default function ClientsPage() {
       // Fetch Service Records for Stats
       const { data: recordsData, error: recordsError } = await supabase
         .from("service_records")
-        .select("client_name, service_value, service_date")
+        .select("client_name, service_value, service_date, service_type")
         .eq("user_id", user.id);
 
       if (recordsError) throw recordsError;
@@ -113,7 +114,17 @@ export default function ClientsPage() {
           lastVisit = sortedDates[0];
         }
 
-        stats[client.id] = { totalSpent, visits, lastVisit };
+        // Find favorite service
+        let favoriteService = null;
+        if (clientRecords.length > 0) {
+          const serviceCounts = clientRecords.reduce((acc, r) => {
+            acc[r.service_type] = (acc[r.service_type] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          favoriteService = Object.keys(serviceCounts).reduce((a, b) => serviceCounts[a] > serviceCounts[b] ? a : b);
+        }
+
+        stats[client.id] = { totalSpent, visits, lastVisit, favoriteService };
       });
 
       setClients(clientsData || []);
@@ -233,6 +244,19 @@ export default function ClientsPage() {
     (c.email && c.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  // Calculate top-level stats
+  const totalClients = clients.length;
+  const totalVisits = Object.values(statsMap).reduce((sum, stat) => sum + stat.visits, 0);
+  const avgVisits = totalClients > 0 ? totalVisits / totalClients : 0;
+  
+  let maxAvgTicket = 0;
+  Object.values(statsMap).forEach(stat => {
+    if (stat.visits > 0) {
+      const avg = stat.totalSpent / stat.visits;
+      if (avg > maxAvgTicket) maxAvgTicket = avg;
+    }
+  });
+
   if (loading) return <AppLayout><LoadingScreen /></AppLayout>;
 
   return (
@@ -240,8 +264,8 @@ export default function ClientsPage() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Gestão de Clientes</h1>
-            <p className="text-muted-foreground text-sm">Gerencie sua carteira de clientes e acompanhe o histórico</p>
+            <h1 className="text-2xl font-bold">Clientes</h1>
+            <p className="text-muted-foreground text-sm">Gestão e histórico de clientes</p>
           </div>
           <Button onClick={() => handleOpenDialog()} className="bg-emerald-600 hover:bg-emerald-700">
             <Plus className="h-4 w-4 mr-2" />
@@ -249,15 +273,39 @@ export default function ClientsPage() {
           </Button>
         </div>
 
-        <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-card border-border">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+              <Users className="h-6 w-6 text-emerald-500 mb-2" />
+              <div className="text-2xl font-bold">{totalClients}</div>
+              <p className="text-sm text-muted-foreground">Total de Clientes</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+              <Scissors className="h-6 w-6 text-emerald-500 mb-2" />
+              <div className="text-2xl font-bold">{avgVisits.toFixed(1)}</div>
+              <p className="text-sm text-muted-foreground">Média de Visitas</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+              <TrendingUp className="h-6 w-6 text-emerald-500 mb-2" />
+              <div className="text-2xl font-bold">R$ {maxAvgTicket.toFixed(0)}</div>
+              <p className="text-sm text-muted-foreground">Maior Ticket Médio</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome, telefone ou email..."
+                placeholder="Buscar cliente..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 max-w-md"
+                className="pl-9 w-full bg-background border-border"
               />
             </div>
           </CardHeader>
@@ -278,57 +326,44 @@ export default function ClientsPage() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Contato</TableHead>
-                      <TableHead className="text-center">Visitas</TableHead>
-                      <TableHead className="text-right">Ticket Médio</TableHead>
-                      <TableHead className="text-right">Total Gasto</TableHead>
-                      <TableHead className="text-center">Última Visita</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="text-muted-foreground">Cliente</TableHead>
+                      <TableHead className="text-center text-muted-foreground">Visitas</TableHead>
+                      <TableHead className="text-center text-muted-foreground">Serviço Favorito</TableHead>
+                      <TableHead className="text-center text-muted-foreground">Ticket Médio</TableHead>
+                      <TableHead className="text-center text-muted-foreground">Total Gasto</TableHead>
+                      <TableHead className="text-center text-muted-foreground">Última Visita</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredClients.map((client) => {
-                      const stats = statsMap[client.id] || { totalSpent: 0, visits: 0, lastVisit: null };
+                      const stats = statsMap[client.id] || { totalSpent: 0, visits: 0, lastVisit: null, favoriteService: null };
                       const avgTicket = stats.visits > 0 ? stats.totalSpent / stats.visits : 0;
                       
                       return (
-                        <TableRow key={client.id}>
+                        <TableRow key={client.id} className="border-border hover:bg-muted/50">
                           <TableCell>
-                            <div className="font-medium">{client.name}</div>
-                            {client.notes && (
-                              <div className="text-xs text-muted-foreground truncate max-w-[150px]" title={client.notes}>
-                                {client.notes}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              {client.phone && (
-                                <div className="flex items-center text-xs text-muted-foreground">
-                                  <Phone className="h-3 w-3 mr-1" /> {client.phone}
-                                </div>
-                              )}
-                              {client.email && (
-                                <div className="flex items-center text-xs text-muted-foreground">
-                                  <Mail className="h-3 w-3 mr-1" /> {client.email}
-                                </div>
-                              )}
-                              {!client.phone && !client.email && (
-                                <span className="text-xs text-muted-foreground italic">Sem contato</span>
-                              )}
-                            </div>
+                            <div className="font-bold text-foreground">{client.name}</div>
                           </TableCell>
                           <TableCell className="text-center">
-                            <span className="inline-flex items-center justify-center bg-accent text-accent-foreground h-6 w-6 rounded-full text-xs font-semibold">
+                            <span className="inline-flex items-center justify-center bg-muted text-foreground px-2.5 py-0.5 rounded-full text-xs font-medium">
                               {stats.visits}
                             </span>
                           </TableCell>
-                          <TableCell className="text-right text-sm">
+                          <TableCell className="text-center">
+                            {stats.favoriteService ? (
+                              <span className="inline-flex items-center justify-center bg-muted text-foreground px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                {stats.favoriteService}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center font-bold text-foreground text-sm">
                             R$ {avgTicket.toFixed(2)}
                           </TableCell>
-                          <TableCell className="text-right font-semibold text-emerald-600 text-sm">
+                          <TableCell className="text-center font-bold text-emerald-500 text-sm">
                             R$ {stats.totalSpent.toFixed(2)}
                           </TableCell>
                           <TableCell className="text-center text-sm text-muted-foreground">
@@ -336,10 +371,10 @@ export default function ClientsPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenDialog(client)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10" onClick={() => handleOpenDialog(client)}>
                                 <Edit2 className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setClientToDelete(client)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10" onClick={() => setClientToDelete(client)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>

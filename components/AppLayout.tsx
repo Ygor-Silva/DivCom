@@ -188,11 +188,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
               <Separator />
               <div className="px-4 py-2 space-y-1">
-                {profile?.phone && <p className="text-xs text-muted-foreground">📞 {profile.phone}</p>}
-                {profile?.cpf_cnpj && <p className="text-xs text-muted-foreground">🪪 {profile.cpf_cnpj}</p>}
+                {profile?.phone && <p className="text-xs text-muted-foreground">📞 <span className="font-medium text-foreground/80">Contato:</span> {profile.phone}</p>}
+                {profile?.cpf_cnpj && <p className="text-xs text-muted-foreground">🪪 <span className="font-medium text-foreground/80">Documento:</span> {profile.cpf_cnpj}</p>}
                 {profile?.bio && (
                   <p className="text-xs text-muted-foreground italic mt-1 line-clamp-2">
-                    &quot;{profile.bio}&quot;
+                    📝 <span className="font-medium text-foreground/80 not-italic">Bio:</span> &quot;{profile.bio}&quot;
                   </p>
                 )}
               </div>
