@@ -77,6 +77,29 @@ export default function NewRecordPage() {
         }
       } else {
         setSuccess(true);
+        
+        // Pré-cadastro em background para não travar a tela
+        (async () => {
+          try {
+            const { data: existingClients, error: searchError } = await supabase
+              .from("clients")
+              .select("id")
+              .eq("user_id", user.id)
+              .ilike("name", clientName.trim())
+              .limit(1);
+
+            if (!searchError && (!existingClients || existingClients.length === 0)) {
+              await supabase.from("clients").insert({
+                user_id: user.id,
+                name: clientName.trim(),
+                notes: "Pré-cadastro automático via Novo Registro",
+              });
+            }
+          } catch (err) {
+            console.error("Erro no pré-cadastro automático:", err);
+          }
+        })();
+
         setTimeout(() => {
           setSuccess(false);
           setClientName("");
